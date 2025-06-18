@@ -661,3 +661,6 @@ Thank you!
 
 [Spacemacs Shop]: https://shop.spreadshirt.com/spacemacs-shop
 [Bountysource]: https://salt.bountysource.com/teams/spacemacs
+
+# Codeium Integration
+This repository includes Codeium integration with CI testing.
