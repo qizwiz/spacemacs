@@ -4,6 +4,18 @@
 *.stackdump
 *.flycheck_packages.el
 /*.zip
+
+# Test and build artifacts
+*.log
+proof.txt
+proof.log
+*.elc
+/test-output.el
+/test-batch.el
+/debug-*.el
+/batch-test.log
+/run-debug.sh
+/test-codeium.sh
 .DS_Store
 .ac-php-conf.json
 .cache
