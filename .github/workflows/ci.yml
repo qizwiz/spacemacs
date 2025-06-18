@@ -13,13 +13,14 @@ on:
 
 env:
   EMACS: emacs
-  EMACSFLAGS: "-Q -l ~/.spacemacs --eval \"(dotspacemacs/user-config)\" -L ~/.emacs.d/lisp -L ~/.emacs.d/lisp/proofs"
+  EMACSFLAGS: "-Q -L ~/.emacs.d/lisp -L ~/.emacs.d/lisp/proofs"
 
 jobs:
-  test:
+  codeium-tests:
+    name: Run Codeium Tests
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
@@ -27,56 +28,86 @@ jobs:
       - name: Set up environment
         run: |
           # Install Emacs and git
+          echo "=== Installing dependencies ==="
           sudo apt-get update
           sudo apt-get install -y emacs-nox git
           
           # Show versions
+          echo -n "Emacs version: "
           emacs --version
+          echo -n "Git version: "
           git --version
-          
-          # Debug file structure
+      
+      - name: Show file structure
+        run: |
           echo "=== File Structure ==="
           ls -la
-          echo "=== Lisp Directory ==="
+          echo "\n=== Lisp Directory ==="
           ls -la lisp/
-          echo "=== Proofs Directory ==="
+          echo "\n=== Proofs Directory ==="
           ls -la lisp/proofs/
       
-      - name: Create minimal .spacemacs
+      - name: Create minimal init file
         run: |
-          cat > ~/.spacemacs << 'EOL'
-          (defun dotspacemacs/init ()
-            (setq-default dotspacemacs-configuration-layers '()
-                          dotspacemacs-additional-packages '()
-                          dotspacemacs-install-packages 'used-but-keep-unused)
-            (setq dotspacemacs-enable-lazy-installation 'all))
-          (defun dotspacemacs/user-init ())
-          (defun dotspacemacs/user-config ())
+          cat > /tmp/init.el << 'EOL'
+          ;; Minimal init file for Codeium tests
+          (require 'package)
+          (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+          (package-initialize)
+          (unless (package-installed-p 'dash)
+            (package-refresh-contents)
+            (package-install 'dash))
+          (require 'dash)
+          
+          ;; Add lisp directories to load path
+          (add-to-list 'load-path "~/.emacs.d/lisp")
+          (add-to-list 'load-path "~/.emacs.d/lisp/proofs")
+          
+          ;; Load proof harness and tests
+          (require 'proof-harness)
+          (require 'proof-commit-message)
+          (require 'proof-chat)
+          (require 'proof-explain-region)
+          (require 'proof-generate-docstring)
+          
+          ;; Run the tests
+          (setq proof-results nil)
+          (mapc (lambda (proof) (push (funcall proof) proof-results))
+                (list #'my/prove-commit-message
+                      #'my/prove-chat
+                      #'my/prove-explain-region
+                      #'my/prove-generate-docstring))
+          
+          ;; Print results
+          (princ "\n=== Test Results ===\n")
+          (princ (mapconcat 'identity (reverse proof-results) "\n"))
+          
+          ;; Exit with appropriate status
+          (if (seq-every-p (lambda (r) (string-match-p "PASS" r)) proof-results)
+              (progn
+                (princ "\n\nAll tests passed!")
+                (kill-emacs 0))
+            (princ "\n\nSome tests failed!")
+            (kill-emacs 1))
           EOL
           
-          echo "=== .spacemacs created ==="
-          cat ~/.spacemacs
-      
-      - name: Run linter
-        run: |
-          echo "=== Running linter ==="
-          make lint || echo "Linting failed"
+          echo "=== Init file created ==="
+          cat /tmp/init.el
       
       - name: Run tests
         run: |
           echo "=== Running tests ==="
           set -x
           
-          # Run the tests and capture output
-          make proof > proof.txt 2>&1 || (cat proof.txt && exit 1)
+          # Run the tests with our minimal init file
+          emacs -Q --batch -l /tmp/init.el
           
-          # Show test output
-          cat proof.txt
+          # Capture the exit status
+          TEST_STATUS=$?
           
-          # Check for success
-          if grep -q 'All proofs passed' proof.txt; then
-            echo "::notice::All proofs passed"
+          if [ $TEST_STATUS -eq 0 ]; then
+            echo "::notice::All tests passed"
           else
-            echo "::error::Some proofs failed"
+            echo "::error::Some tests failed"
             exit 1
           fi
