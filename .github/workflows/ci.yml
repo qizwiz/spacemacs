@@ -51,16 +51,24 @@ jobs:
         run: |
           # Create a test directory and copy our lisp files
           mkdir -p /tmp/emacs-test/lisp/proofs
-          cp -r lisp/* /tmp/emacs-test/lisp/
-          cp -r lisp/proofs/* /tmp/emacs-test/lisp/proofs/
+          cp -r lisp/* /tmp/emacs-test/lisp/ 2>/dev/null || true
+          cp -r lisp/proofs/* /tmp/emacs-test/lisp/proofs/ 2>/dev/null || true
           
           # Show the directory structure for debugging
           echo "=== Test directory structure ==="
-          find /tmp/emacs-test -type f | sort
+          find /tmp/emacs-test -type f | sort || true
+          
+          # Also copy to /tmp for backward compatibility
+          mkdir -p /tmp/lisp/proofs
+          cp -r lisp/* /tmp/lisp/ 2>/dev/null || true
+          cp -r lisp/proofs/* /tmp/lisp/proofs/ 2>/dev/null || true
           
       - name: Create minimal init file
         run: |
-          cat > /tmp/emacs-test/init.el << 'EOL'
+          # Create the init file in both locations for compatibility
+          for dir in /tmp/emacs-test /tmp; do
+            mkdir -p $dir
+            cat > $dir/init.el << 'EOL'
           ;; Minimal init file for Codeium tests
           (require 'package)
           (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
@@ -70,19 +78,30 @@ jobs:
             (package-install 'dash))
           (require 'dash)
           
-          ;; Add test directory to load path
+          ;; Add test directories to load path
           (add-to-list 'load-path "/tmp/emacs-test/lisp")
           (add-to-list 'load-path "/tmp/emacs-test/lisp/proofs")
+          (add-to-list 'load-path "/tmp/lisp")
+          (add-to-list 'load-path "/tmp/lisp/proofs")
           
           ;; Debug: Print load path and check if files exist
+          (message "Current directory: %s" default-directory)
           (message "Load path: %S" load-path)
           (mapc (lambda (file)
-                  (message "Checking for %s: %s" file (if (locate-library file) "found" "not found")))
+                  (let ((found (locate-library file)))
+                    (message "Checking for %s: %s" file (if found (concat "found at " found) "not found"))))
                 '("proof-harness" "proof-commit-message" "proof-chat" 
                   "proof-explain-region" "proof-generate-docstring"))
           
-          ;; Load proof harness and tests
-          (require 'proof-harness)
+          ;; Try to load proof harness
+          (condition-case err
+              (require 'proof-harness)
+            (error 
+             (message "Failed to load proof-harness: %s" (error-message-string err))
+             (message "Trying to load files directly...")
+             (load "proof-harness.el" nil t)))
+          EOL
+          done
           
           ;; Run the tests
           (setq proof-results nil)
