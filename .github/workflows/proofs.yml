@@ -1,0 +1,52 @@
+name: Codeium-Proofs
+
+on:
+  push:
+    paths:
+      - ".spacemacs"
+      - "lisp/**"
+      - ".github/workflows/proofs.yml"
+  pull_request:
+    paths:
+      - ".spacemacs"
+      - "lisp/**"
+      - ".github/workflows/proofs.yml"
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      
+      - name: Set up Emacs
+        uses: jcs/setup-emacs@v3
+        with:
+          version: '29.1'
+      
+      - name: Run linter
+        run: make lint
+
+  proofs:
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      
+      - name: Set up Emacs
+        uses: jcs/setup-emacs@v3
+        with:
+          version: '29.1'
+      
+      - name: Run tests
+        run: |
+          make proof > proof.txt 2>&1 || (cat proof.txt && exit 1)
+          cat proof.txt
+          
+          # Verify proof output contains expected results
+          if ! grep -q 'All proofs passed' proof.txt; then
+            echo "::error::Some proofs failed"
+            exit 1
+          fi
