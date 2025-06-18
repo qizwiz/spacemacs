@@ -164,6 +164,20 @@ jobs:
           echo "=== Running tests ==="
           set -x
           
+          # Show the directory structure for debugging
+          echo "=== Test directory structure ==="
+          find /tmp/emacs-test -type f | sort || true
+          
+          # Check if the init file exists
+          if [ ! -f "/tmp/emacs-test/init.el" ]; then
+            echo "::error::Init file not found at /tmp/emacs-test/init.el"
+            exit 1
+          fi
+          
+          # Show the contents of the init file for debugging
+          echo -e "\n=== Contents of init.el ==="
+          cat /tmp/emacs-test/init.el
+          
           # Change to the test directory and run Emacs with our minimal init file
           cd /tmp/emacs-test
           emacs -Q --batch -l init.el
