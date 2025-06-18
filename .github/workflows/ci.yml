@@ -1,45 +1,22 @@
-name: CI
+name: Codeium Integration Tests
 
 on:
   push:
+    branches: [ develop ]
     paths:
-      - ".spacemacs"
-      - "lisp/**"
-      - ".github/workflows/ci.yml"
+      - '.github/workflows/ci.yml'
+      - 'lisp/**'
+      - 'Makefile'
   pull_request:
-    paths:
-      - ".spacemacs"
-      - "lisp/**"
-      - ".github/workflows/ci.yml"
+    branches: [ develop ]
   workflow_dispatch:
 
-jobs:
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          fetch-depth: 0
-      
-      - name: Install Emacs
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y emacs-nox
-          emacs --version
-      
-      - name: Debug file structure
-        run: |
-          ls -la
-          ls -la .github/workflows/
-          ls -la lisp/
-      
-      - name: Run linter
-        run: |
-          make lint || echo "Linting failed"
+env:
+  EMACS: emacs
+  EMACSFLAGS: "-Q -l ~/.spacemacs --eval \"(dotspacemacs/user-config)\" -L ~/.emacs.d/lisp -L ~/.emacs.d/lisp/proofs"
 
+jobs:
   test:
-    needs: lint
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -47,20 +24,25 @@ jobs:
         with:
           fetch-depth: 0
       
-      - name: Install Emacs and dependencies
+      - name: Set up environment
         run: |
-          sudo add-apt-repository -y ppa:kelleyk/emacs
+          # Install Emacs and git
           sudo apt-get update
-          sudo apt-get install -y emacs29-nox git
+          sudo apt-get install -y emacs-nox git
+          
+          # Show versions
           emacs --version
-      
-      - name: Debug file structure
-        run: |
+          git --version
+          
+          # Debug file structure
+          echo "=== File Structure ==="
           ls -la
+          echo "=== Lisp Directory ==="
           ls -la lisp/
+          echo "=== Proofs Directory ==="
           ls -la lisp/proofs/
       
-      - name: Create minimal .spacemacs for testing
+      - name: Create minimal .spacemacs
         run: |
           cat > ~/.spacemacs << 'EOL'
           (defun dotspacemacs/init ()
@@ -71,14 +53,27 @@ jobs:
           (defun dotspacemacs/user-init ())
           (defun dotspacemacs/user-config ())
           EOL
+          
+          echo "=== .spacemacs created ==="
+          cat ~/.spacemacs
       
-      - name: Run tests with debug output
+      - name: Run linter
         run: |
+          echo "=== Running linter ==="
+          make lint || echo "Linting failed"
+      
+      - name: Run tests
+        run: |
+          echo "=== Running tests ==="
           set -x
+          
+          # Run the tests and capture output
           make proof > proof.txt 2>&1 || (cat proof.txt && exit 1)
+          
+          # Show test output
           cat proof.txt
           
-          # Check for success or failure
+          # Check for success
           if grep -q 'All proofs passed' proof.txt; then
             echo "::notice::All proofs passed"
           else
