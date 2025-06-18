@@ -50,25 +50,26 @@ jobs:
       - name: Create test directory structure
         run: |
           # Create a test directory and copy our lisp files
-          mkdir -p /tmp/emacs-test/lisp/proofs
-          cp -r lisp/* /tmp/emacs-test/lisp/ 2>/dev/null || true
-          cp -r lisp/proofs/* /tmp/emacs-test/lisp/proofs/ 2>/dev/null || true
+          TEST_DIR="/tmp/emacs-test"
+          mkdir -p $TEST_DIR/lisp/proofs
+          
+          # Copy lisp files if they exist
+          if [ -d "lisp" ]; then
+            cp -r lisp/* $TEST_DIR/lisp/ 2>/dev/null || true
+            
+            # Copy proof files if they exist
+            if [ -d "lisp/proofs" ]; then
+              cp -r lisp/proofs/* $TEST_DIR/lisp/proofs/ 2>/dev/null || true
+            fi
+          fi
           
           # Show the directory structure for debugging
           echo "=== Test directory structure ==="
-          find /tmp/emacs-test -type f | sort || true
+          find $TEST_DIR -type f | sort || true
           
-          # Also copy to /tmp for backward compatibility
-          mkdir -p /tmp/lisp/proofs
-          cp -r lisp/* /tmp/lisp/ 2>/dev/null || true
-          cp -r lisp/proofs/* /tmp/lisp/proofs/ 2>/dev/null || true
-          
-      - name: Create minimal init file
-        run: |
-          # Create the init file in both locations for compatibility
-          for dir in /tmp/emacs-test /tmp; do
-            mkdir -p $dir
-            cat > $dir/init.el << 'EOL'
+          # Print the contents of the init file we're about to create
+          echo -e "\n=== Contents of init.el ==="
+          cat > $TEST_DIR/init.el << 'EOL'
           ;; Minimal init file for Codeium tests
           (require 'package)
           (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
@@ -81,8 +82,6 @@ jobs:
           ;; Add test directories to load path
           (add-to-list 'load-path "/tmp/emacs-test/lisp")
           (add-to-list 'load-path "/tmp/emacs-test/lisp/proofs")
-          (add-to-list 'load-path "/tmp/lisp")
-          (add-to-list 'load-path "/tmp/lisp/proofs")
           
           ;; Debug: Print load path and check if files exist
           (message "Current directory: %s" default-directory)
@@ -100,8 +99,41 @@ jobs:
              (message "Failed to load proof-harness: %s" (error-message-string err))
              (message "Trying to load files directly...")
              (load "proof-harness.el" nil t)))
+          
+          ;; Run the tests
+          (setq proof-results nil)
+          (mapc (lambda (proof) 
+                  (condition-case err
+                      (push (funcall proof) proof-results)
+                    (error 
+                     (push (format "ERROR in %s: %s" 
+                                  (symbol-name proof) 
+                                  (error-message-string err)) 
+                           proof-results))))
+                (list #'my/prove-commit-message
+                      #'my/prove-chat
+                      #'my/prove-explain-region
+                      #'my/prove-generate-docstring))
+          
+          ;; Print results
+          (princ "\n=== Test Results ===\n")
+          (princ (mapconcat 'identity (reverse proof-results) "\n"))
+          
+          ;; Exit with appropriate status
+          (if (seq-every-p (lambda (r) (string-match-p "PASS\|SKIP" r)) proof-results)
+              (progn
+                (princ "\n\nAll tests passed!")
+                (kill-emacs 0))
+            (princ "\n\nSome tests failed!")
+            (kill-emacs 1))
           EOL
-          done
+          
+          # Show the contents of the init file
+          echo -e "\n=== Contents of init.el ==="
+          cat $TEST_DIR/init.el
+          
+          # Also create a symlink for backward compatibility
+          ln -sf $TEST_DIR/init.el /tmp/init.el || true
           
           ;; Run the tests
           (setq proof-results nil)
