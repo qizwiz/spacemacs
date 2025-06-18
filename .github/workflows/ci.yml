@@ -47,9 +47,20 @@ jobs:
           echo "\n=== Proofs Directory ==="
           ls -la lisp/proofs/
       
+      - name: Create test directory structure
+        run: |
+          # Create a test directory and copy our lisp files
+          mkdir -p /tmp/emacs-test/lisp/proofs
+          cp -r lisp/* /tmp/emacs-test/lisp/
+          cp -r lisp/proofs/* /tmp/emacs-test/lisp/proofs/
+          
+          # Show the directory structure for debugging
+          echo "=== Test directory structure ==="
+          find /tmp/emacs-test -type f | sort
+          
       - name: Create minimal init file
         run: |
-          cat > /tmp/init.el << 'EOL'
+          cat > /tmp/emacs-test/init.el << 'EOL'
           ;; Minimal init file for Codeium tests
           (require 'package)
           (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
@@ -59,16 +70,19 @@ jobs:
             (package-install 'dash))
           (require 'dash)
           
-          ;; Add lisp directories to load path
-          (add-to-list 'load-path "~/.emacs.d/lisp")
-          (add-to-list 'load-path "~/.emacs.d/lisp/proofs")
+          ;; Add test directory to load path
+          (add-to-list 'load-path "/tmp/emacs-test/lisp")
+          (add-to-list 'load-path "/tmp/emacs-test/lisp/proofs")
+          
+          ;; Debug: Print load path and check if files exist
+          (message "Load path: %S" load-path)
+          (mapc (lambda (file)
+                  (message "Checking for %s: %s" file (if (locate-library file) "found" "not found")))
+                '("proof-harness" "proof-commit-message" "proof-chat" 
+                  "proof-explain-region" "proof-generate-docstring"))
           
           ;; Load proof harness and tests
           (require 'proof-harness)
-          (require 'proof-commit-message)
-          (require 'proof-chat)
-          (require 'proof-explain-region)
-          (require 'proof-generate-docstring)
           
           ;; Run the tests
           (setq proof-results nil)
@@ -99,8 +113,9 @@ jobs:
           echo "=== Running tests ==="
           set -x
           
-          # Run the tests with our minimal init file
-          emacs -Q --batch -l /tmp/init.el
+          # Change to the test directory and run Emacs with our minimal init file
+          cd /tmp/emacs-test
+          emacs -Q --batch -l init.el
           
           # Capture the exit status
           TEST_STATUS=$?
