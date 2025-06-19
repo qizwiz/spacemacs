@@ -82,10 +82,16 @@ jobs:
       - name: Run tests
         run: |
           echo "=== Running tests with Emacs ==="
-          echo "Using init file: ${TEST_DIR}/init.el"
+          
+          # Create the test directory if it doesn't exist
+          mkdir -p ${TEST_DIR}
+          
+          # Copy the init file to the test directory
+          echo "=== Copying init file to ${TEST_DIR}/init.el ==="
+          cp tests/config/init-test.el ${TEST_DIR}/init.el
           
           # Show the test directory contents
-          echo "=== Test directory contents ==="
+          echo -e "\n=== Test directory contents ==="
           ls -la ${TEST_DIR}/
           
           # Show the contents of the init file for debugging
