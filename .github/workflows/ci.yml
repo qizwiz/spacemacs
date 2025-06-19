@@ -83,24 +83,9 @@ jobs:
         run: |
           echo "=== Running tests with Emacs ==="
           
-          # Create the test directory if it doesn't exist
-          mkdir -p ${TEST_DIR}
-          
-          # Copy the init file to the test directory
-          echo "=== Copying init file to ${TEST_DIR}/init.el ==="
-          cp ${GITHUB_WORKSPACE}/tests/config/init-test.el ${TEST_DIR}/init.el
-          
-          # Create necessary directories
-          mkdir -p ${TEST_DIR}/lisp/proofs
-          
-          # Copy the proof files to the test directory
-          echo "=== Copying proof files ==="
-          cp -r ${GITHUB_WORKSPACE}/lisp/proof-harness.el ${TEST_DIR}/lisp/
-          cp -r ${GITHUB_WORKSPACE}/lisp/proofs/*.el ${TEST_DIR}/lisp/proofs/
-          
           # Show the test directory contents
           echo -e "\n=== Test directory contents ==="
-          find ${TEST_DIR} -type f | sort
+          find ${TEST_DIR} -type f | sort || true
           
           # Show the contents of the init file for debugging
           echo -e "\n=== Contents of init.el ==="
@@ -122,5 +107,5 @@ jobs:
           fi
         env:
           EMACS: emacs
-          EMACSFLAGS: -Q -L ~/.emacs.d/lisp -L ~/.emacs.d/lisp/proofs
+          EMACSFLAGS: -Q -L ${{ github.workspace }}/lisp -L ${{ github.workspace }}/lisp/proofs
           TEST_DIR: "/tmp/emacs-test"
