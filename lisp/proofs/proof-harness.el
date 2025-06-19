@@ -18,17 +18,45 @@
 (message "\n=== Setting up straight.el ===")
 (setq straight-repository-branch "develop")
 (defvar bootstrap-version)
-(let ((bootstrap-file
-       (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
-      (bootstrap-version 5))
+
+;; Try to get the test directory from the environment variable
+(defvar test-dir (or (getenv "TEST_DIR") 
+                    (file-name-directory (file-truename 
+                                       (expand-file-name ".." (file-name-directory load-file-name))))))
+
+;; Define the bootstrap file path
+(defvar bootstrap-file
+  (expand-file-name "straight/repos/straight.el/bootstrap.el" test-dir))
+
+(message "Using test directory: %s" test-dir)
+(message "Looking for bootstrap file at: %s" bootstrap-file)
+
+;; Check if the bootstrap file exists
+(if (file-exists-p bootstrap-file)
+    (message "Found bootstrap file at: %s" bootstrap-file)
+  (message "WARNING: Bootstrap file not found at: %s" bootstrap-file)
+  (message "Directory contents: %S" (directory-files (file-name-directory bootstrap-file) t)))
+
+;; Set up straight.el
+(let ((bootstrap-version 5))
   (unless (file-exists-p bootstrap-file)
+    (message "Bootstrap file not found, installing straight.el...")
     (with-temp-buffer
-      (insert-file-contents-literally
-       (expand-file-name "lisp/proofs/straight-bootstrap.el" user-emacs-directory))
-      (eval-buffer)
-      (message "Installed straight.el")))
-  (load bootstrap-file nil 'nomessage)
-  (message "Loaded straight.el"))
+      (let ((bootstrap-src (expand-file-name "lisp/proofs/straight-bootstrap.el" test-dir)))
+        (if (file-exists-p bootstrap-src)
+            (progn
+              (insert-file-contents-literally bootstrap-src)
+              (eval-buffer)
+              (message "Installed straight.el from %s" bootstrap-src))
+          (message "ERROR: Could not find straight-bootstrap.el at %s" bootstrap-src)
+          (kill-emacs 1)))))
+  
+  (if (file-exists-p bootstrap-file)
+      (progn
+        (load bootstrap-file nil 'nomessage)
+        (message "Loaded straight.el from %s" bootstrap-file))
+    (message "ERROR: Failed to load bootstrap file at %s" bootstrap-file)
+    (kill-emacs 1)))
 
 ;; Set up Codeium
 (message "\n=== Setting up Codeium ===")
