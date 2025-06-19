@@ -19,14 +19,18 @@
 (setq straight-repository-branch "develop")
 (defvar bootstrap-version)
 
-;; Try to get the test directory from the environment variable
+;; Get the test directory from environment or use a sensible default
 (defvar test-dir (or (getenv "TEST_DIR") 
-                    (file-name-directory (file-truename 
-                                       (expand-file-name ".." (file-name-directory load-file-name))))))
+                    (expand-file-name "tests" (file-name-directory (file-truename 
+                                       (expand-file-name ".." (file-name-directory load-file-name)))))))
 
-;; Define the bootstrap file path
+;; Define the bootstrap file path - first try the standard location, then fall back to test dir
 (defvar bootstrap-file
-  (expand-file-name "straight/repos/straight.el/bootstrap.el" test-dir))
+  (let ((standard-path (expand-file-name "straight/repos/straight.el/bootstrap.el" user-emacs-directory))
+        (test-path (expand-file-name "straight/repos/straight.el/bootstrap.el" test-dir)))
+    (cond ((file-exists-p standard-path) standard-path)
+          ((file-exists-p test-path) test-path)
+          (t standard-path))))  ; Fall back to standard path for better error messages
 
 (message "Using test directory: %s" test-dir)
 (message "Looking for bootstrap file at: %s" bootstrap-file)

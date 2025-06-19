@@ -125,37 +125,22 @@ EOL
   done
 }
 
-# Create bootstrap files in the test directory
+# Create bootstrap files in the standard location first
+create_bootstrap_files "$HOME/.emacs.d"
+
+# Then create in the test directory
 create_bootstrap_files "$TEST_DIR"
 
-# Also create bootstrap files in the runner's home directory
-RUNNER_HOME="/home/runner"
-if [ -d "$RUNNER_HOME" ] && [ -w "$RUNNER_HOME" ]; then
-  echo "=== Creating bootstrap files in $RUNNER_HOME/.emacs.d ==="
-  create_bootstrap_files "$RUNNER_HOME/.emacs.d"
-else
-  echo "=== WARNING: Cannot create bootstrap files in $RUNNER_HOME/.emacs.d (directory not writable or doesn't exist) ==="
-  echo "Current user: $(whoami)"
-  echo "Directory permissions:"
-  ls -ld "$RUNNER_HOME" 2>/dev/null || echo "$RUNNER_HOME does not exist"
-  echo "Trying with sudo..."
-  
-  # Try with sudo if available
-  if command -v sudo >/dev/null 2>&1; then
-    echo "Attempting to create directory with sudo..."
-    sudo mkdir -p "$RUNNER_HOME/.emacs.d/straight/repos/straight.el"
-    
-    if [ -d "$RUNNER_HOME/.emacs.d/straight/repos/straight.el" ]; then
-      echo "Directory created with sudo, setting permissions..."
-      sudo chown -R $(whoami) "$RUNNER_HOME/.emacs.d"
-      create_bootstrap_files "$RUNNER_HOME/.emacs.d"
-    else
-      echo "Failed to create directory with sudo"
-    fi
+# Verify the files were created in both locations
+for dir in "$HOME/.emacs.d" "$TEST_DIR"; do
+  bootstrap_file="$dir/straight/repos/straight.el/bootstrap.el"
+  if [ -f "$bootstrap_file" ]; then
+    echo "✓ Bootstrap file exists at: $bootstrap_file"
   else
-    echo "sudo not available, cannot create directory"
+    echo "✗ Bootstrap file missing at: $bootstrap_file"
+    echo "Directory contents: $(ls -la "$(dirname "$bootstrap_file" 2>/dev/null)" 2>/dev/null || echo 'Directory does not exist')"
   fi
-fi
+done
 
 # Also create straight-bootstrap.el in the home directory for tests that expect it there
 echo -e "\n=== Copying straight-bootstrap.el to home directory ==="
