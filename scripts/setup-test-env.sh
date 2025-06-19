@@ -1,6 +1,27 @@
 #!/bin/bash
 set -e
 
+# Enable verbose output for debugging
+set -x
+
+# Print current working directory
+echo "=== Current working directory: $(pwd) ==="
+
+# Debugging: Print environment variables
+echo "=== Environment Variables ==="
+env | sort
+echo "==========================="
+
+# Print user and group info
+echo "=== User and Group Info ==="
+id
+echo "==========================="
+
+# Print disk usage
+echo "=== Disk Usage ==="
+df -h
+echo "================="
+
 # Create test directory structure
 echo "=== Creating test directory structure ==="
 mkdir -p "$TEST_DIR/lisp/proofs"
