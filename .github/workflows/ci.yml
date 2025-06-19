@@ -79,26 +79,21 @@ jobs:
       
       - name: Run tests
         run: |
-          echo "=== Running tests ==="
-          set -x
+          echo "=== Running tests with Emacs ==="
+          echo "Using init file: ${TEST_DIR}/init.el"
           
-          # Show the directory structure for debugging
-          echo "=== Test directory structure ==="
-          find ${{ env.TEST_DIR }} -type f | sort || true
-          
-          # Check if the init file exists
-          if [ ! -f "${{ env.TEST_DIR }}/init.el" ]; then
-            echo "::error::Init file not found at ${{ env.TEST_DIR }}/init.el"
-            exit 1
-          fi
+          # Show the test directory contents
+          echo "=== Test directory contents ==="
+          ls -la ${TEST_DIR}/
           
           # Show the contents of the init file for debugging
           echo -e "\n=== Contents of init.el ==="
-          cat ${{ env.TEST_DIR }}/init.el
+          cat ${TEST_DIR}/init.el
           
           # Change to the test directory and run Emacs with our minimal init file
-          cd ${{ env.TEST_DIR }}
-          emacs -Q --batch -l init.el
+          echo -e "\n=== Running Emacs tests ==="
+          cd ${TEST_DIR}
+          ${EMACS} -Q --batch -l init.el
           
           # Capture the exit status
           TEST_STATUS=$?
@@ -109,3 +104,7 @@ jobs:
             echo "::error::Some tests failed"
             exit 1
           fi
+        env:
+          EMACS: emacs
+          EMACSFLAGS: -Q -L ~/.emacs.d/lisp -L ~/.emacs.d/lisp/proofs
+          TEST_DIR: "/tmp/emacs-test"
