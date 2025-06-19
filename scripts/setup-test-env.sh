@@ -17,7 +17,7 @@ if [ -d "lisp" ]; then
   fi
 fi
 
-# Create straight-bootstrap.el
+# Create straight-bootstrap.el in the test directory
 echo "=== Creating dummy straight-bootstrap.el in $TEST_DIR/lisp/proofs/ ==="
 mkdir -p "$TEST_DIR/lisp/proofs"
 cat > "$TEST_DIR/lisp/proofs/straight-bootstrap.el" << 'EOL'
@@ -32,6 +32,12 @@ cat > "$TEST_DIR/lisp/proofs/straight-bootstrap.el" << 'EOL'
 
 (provide 'straight-bootstrap)
 EOL
+
+# Also create straight-bootstrap.el in the home directory for tests that expect it there
+HOME_EMACS_DIR="$HOME/.emacs.d"
+mkdir -p "$HOME_EMACS_DIR/lisp/proofs"
+cp "$TEST_DIR/lisp/proofs/straight-bootstrap.el" "$HOME_EMACS_DIR/lisp/proofs/straight-bootstrap.el"
+echo "Copied straight-bootstrap.el to $HOME_EMACS_DIR/lisp/proofs/"
 
 # Copy the init file from the repository
 echo -e "\n=== Copying init file to $TEST_DIR/init.el ==="
