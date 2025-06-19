@@ -1,6 +1,20 @@
 ;; Minimal init file for Codeium tests
 (message "=== Starting minimal init file ===")
 
+;; Set up straight.el bootstrap path
+(defvar test-dir (or (getenv "TEST_DIR") "/tmp/emacs-test"))
+(defvar straight-dir (expand-file-name "straight" test-dir))
+(defvar straight-bootstrap-file (expand-file-name "straight/repos/straight.el/bootstrap.el" test-dir))
+
+(message "Test directory: %s" test-dir)
+(message "Straight directory: %s" straight-dir)
+(message "Bootstrap file: %s" straight-bootstrap-file)
+
+;; Add test directories to load path
+(add-to-list 'load-path (expand-file-name "lisp" test-dir))
+(add-to-list 'load-path (expand-file-name "lisp/proofs" test-dir))
+(add-to-list 'load-path (expand-file-name "straight/repos/straight.el" test-dir))
+
 ;; Basic package setup
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
@@ -9,21 +23,27 @@
 ;; Try to install dash if not available
 (condition-case err
     (unless (package-installed-p 'dash)
+      (message "Installing dash package...")
       (package-refresh-contents)
-      (package-install 'dash))
+      (package-install 'dash)
+      (message "Dash package installed successfully"))
   (error (message "Warning: Could not install dash package: %s" (error-message-string err))))
 
 (condition-case err
     (require 'dash)
   (error (message "Warning: Could not load dash: %s" (error-message-string err))))
 
-;; Add test directories to load path
-(add-to-list 'load-path "/tmp/emacs-test/lisp")
-(add-to-list 'load-path "/tmp/emacs-test/lisp/proofs")
-
-;; Debug: Print load path and check if files exist
+;; Debug: Print environment and check files
 (message "Current directory: %s" default-directory)
 (message "Load path: %S" load-path)
+
+;; Check if straight.el bootstrap exists
+(if (file-exists-p straight-bootstrap-file)
+    (message "Found straight.el bootstrap at: %s" straight-bootstrap-file)
+  (message "WARNING: straight.el bootstrap not found at: %s" straight-bootstrap-file)
+  (message "Directory contents: %S" (directory-files (file-name-directory straight-bootstrap-file))))
+
+;; Check for proof files
 (mapc (lambda (file)
         (let ((found (locate-library file)))
           (message "Checking for %s: %s" file (if found (concat "found at " found) "not found"))))

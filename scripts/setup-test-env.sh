@@ -59,12 +59,12 @@ echo "=== Contents of $TEST_DIR/lisp/proofs/straight-bootstrap.el ==="
 cat "$TEST_DIR/lisp/proofs/straight-bootstrap.el"
 echo -e "\n=== End of file ===\n"
 
-# Create the straight.el bootstrap file that's being looked for in the GitHub Actions environment
-RUNNER_HOME="/home/runner"
-STRAIGHT_DIR="$RUNNER_HOME/.emacs.d/straight/repos/straight.el"
+# Create the straight.el bootstrap file in the test directory
+STRAIGHT_DIR="$TEST_DIR/straight/repos/straight.el"
 echo "=== Creating straight.el bootstrap in $STRAIGHT_DIR ==="
 
 # Create parent directories with verbose output
+echo "Current directory: $(pwd)"
 echo "Creating directory: $(dirname "$STRAIGHT_DIR")"
 mkdir -pv "$(dirname "$STRAIGHT_DIR")" || {
   echo "Failed to create directory: $(dirname "$STRAIGHT_DIR")"
@@ -91,19 +91,35 @@ cat > "$STRAIGHT_DIR/bootstrap.el" << 'EOL'
 (provide 'bootstrap)
 EOL
 
-# Verify the file was created
-if [ -f "$STRAIGHT_DIR/bootstrap.el" ]; then
-  echo "=== Successfully created bootstrap.el ==="
-  echo "File location: $STRAIGHT_DIR/bootstrap.el"
-  echo "File contents:"
-  cat "$STRAIGHT_DIR/bootstrap.el"
-  echo -e "\n=== End of file ===\n"
-else
-  echo "ERROR: Failed to create bootstrap.el in $STRAIGHT_DIR/"
-  echo "Directory contents of $STRAIGHT_DIR/:"
-  ls -la "$STRAIGHT_DIR/" 2>/dev/null || echo "Directory does not exist"
-  exit 1
-fi
+# Also create a straight.el file that loads our bootstrap
+cat > "$TEST_DIR/straight/straight.el" << 'EOL'
+;;; straight.el - A simple package manager for Emacs
+(require 'cl-lib)
+
+(defvar straight-repository-branch "master")
+(defvar straight-repository-user "radian-software")
+(defvar straight-repo-dir (file-name-directory (or load-file-name
+                                                 (buffer-file-name)
+                                                 default-directory)))
+
+(provide 'straight)
+EOL
+
+# Verify the files were created
+for file in "$STRAIGHT_DIR/bootstrap.el" "$TEST_DIR/straight/straight.el"; do
+  if [ -f "$file" ]; then
+    echo "=== Successfully created $(basename "$file") ==="
+    echo "File location: $file"
+    echo "File contents:"
+    cat "$file"
+    echo -e "\n=== End of file ===\n"
+  else
+    echo "ERROR: Failed to create $file"
+    echo "Directory contents of $(dirname "$file")/:"
+    ls -la "$(dirname "$file")/" 2>/dev/null || echo "Directory does not exist"
+    exit 1
+  fi
+done
 
 # Also create straight-bootstrap.el in the home directory for tests that expect it there
 echo -e "\n=== Copying straight-bootstrap.el to home directory ==="
