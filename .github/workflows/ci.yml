@@ -13,7 +13,7 @@ on:
 
 env:
   EMACS: emacs
-  EMACSFLAGS: "-Q -L ~/.emacs.d/lisp -L ~/.emacs.d/lisp/proofs"
+  EMACSFLAGS: "-Q -L /home/runner/work/spacemacs/spacemacs/lisp -L /home/runner/work/spacemacs/spacemacs/lisp/proofs"
   TEST_DIR: "/tmp/emacs-test"
 
 jobs:
