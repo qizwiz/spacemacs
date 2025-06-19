@@ -52,8 +52,18 @@ jobs:
         run: |
           # Make the script executable
           chmod +x ./scripts/setup-test-env.sh
-          # Run the setup script
-          ./scripts/setup-test-env.sh
+          # Show environment variables for debugging
+          echo "=== Environment Variables ==="
+          env | sort
+          # Run the setup script with environment variables
+          echo "=== Running setup script ==="
+          TEST_DIR="/tmp/emacs-test" ./scripts/setup-test-env.sh
+          # Verify the script created the expected files
+          echo "=== Verifying setup ==="
+          echo "Contents of $TEST_DIR:"
+          ls -la "$TEST_DIR" || echo "Test directory not found"
+          echo -e "\nContents of $TEST_DIR/lisp/proofs:"
+          ls -la "$TEST_DIR/lisp/proofs" || echo "Proofs directory not found"
       
       - name: Run tests
         run: |
