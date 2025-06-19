@@ -38,6 +38,24 @@ echo "=== Contents of $TEST_DIR/lisp/proofs/straight-bootstrap.el ==="
 cat "$TEST_DIR/lisp/proofs/straight-bootstrap.el"
 echo -e "\n=== End of file ===\n"
 
+# Create the straight.el bootstrap file that's being looked for
+STRAIGHT_DIR="$HOME/.emacs.d/straight/repos/straight.el"
+echo "=== Creating straight.el bootstrap in $STRAIGHT_DIR ==="
+mkdir -p "$STRAIGHT_DIR"
+
+# Create a minimal bootstrap.el file
+cat > "$STRAIGHT_DIR/bootstrap.el" << 'EOL'
+;;; Minimal straight.el bootstrap for CI testing
+(defun straight-bootstrap--version () "1.0.0")
+(defun straight-bootstrap--dependencies () '())
+(defun straight-bootstrap--bootstrap-version () 5)
+(provide 'bootstrap)
+EOL
+
+echo "=== Contents of $STRAIGHT_DIR/bootstrap.el ==="
+cat "$STRAIGHT_DIR/bootstrap.el"
+echo -e "\n=== End of file ===\n"
+
 # Also create straight-bootstrap.el in the home directory for tests that expect it there
 echo -e "\n=== Copying straight-bootstrap.el to home directory ==="
 HOME_EMACS_DIR="$HOME/.emacs.d"
