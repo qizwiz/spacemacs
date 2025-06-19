@@ -59,12 +59,30 @@ echo "=== Contents of $TEST_DIR/lisp/proofs/straight-bootstrap.el ==="
 cat "$TEST_DIR/lisp/proofs/straight-bootstrap.el"
 echo -e "\n=== End of file ===\n"
 
-# Create the straight.el bootstrap file that's being looked for
-STRAIGHT_DIR="$HOME/.emacs.d/straight/repos/straight.el"
+# Create the straight.el bootstrap file that's being looked for in the GitHub Actions environment
+RUNNER_HOME="/home/runner"
+STRAIGHT_DIR="$RUNNER_HOME/.emacs.d/straight/repos/straight.el"
 echo "=== Creating straight.el bootstrap in $STRAIGHT_DIR ==="
-mkdir -p "$STRAIGHT_DIR"
+
+# Create parent directories with verbose output
+echo "Creating directory: $(dirname "$STRAIGHT_DIR")"
+mkdir -pv "$(dirname "$STRAIGHT_DIR")" || {
+  echo "Failed to create directory: $(dirname "$STRAIGHT_DIR")"
+  echo "Current directory: $(pwd)"
+  echo "Directory permissions:"
+  ls -ld "$(dirname "$STRAIGHT_DIR" 2>/dev/null || echo "(does not exist)")"
+  exit 1
+}
+
+# Create the directory for the bootstrap file
+echo "Creating directory: $STRAIGHT_DIR"
+mkdir -pv "$STRAIGHT_DIR" || {
+  echo "Failed to create directory: $STRAIGHT_DIR"
+  exit 1
+}
 
 # Create a minimal bootstrap.el file
+echo "Creating bootstrap.el in $STRAIGHT_DIR"
 cat > "$STRAIGHT_DIR/bootstrap.el" << 'EOL'
 ;;; Minimal straight.el bootstrap for CI testing
 (defun straight-bootstrap--version () "1.0.0")
@@ -73,9 +91,19 @@ cat > "$STRAIGHT_DIR/bootstrap.el" << 'EOL'
 (provide 'bootstrap)
 EOL
 
-echo "=== Contents of $STRAIGHT_DIR/bootstrap.el ==="
-cat "$STRAIGHT_DIR/bootstrap.el"
-echo -e "\n=== End of file ===\n"
+# Verify the file was created
+if [ -f "$STRAIGHT_DIR/bootstrap.el" ]; then
+  echo "=== Successfully created bootstrap.el ==="
+  echo "File location: $STRAIGHT_DIR/bootstrap.el"
+  echo "File contents:"
+  cat "$STRAIGHT_DIR/bootstrap.el"
+  echo -e "\n=== End of file ===\n"
+else
+  echo "ERROR: Failed to create bootstrap.el in $STRAIGHT_DIR/"
+  echo "Directory contents of $STRAIGHT_DIR/:"
+  ls -la "$STRAIGHT_DIR/" 2>/dev/null || echo "Directory does not exist"
+  exit 1
+fi
 
 # Also create straight-bootstrap.el in the home directory for tests that expect it there
 echo -e "\n=== Copying straight-bootstrap.el to home directory ==="
