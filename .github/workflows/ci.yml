@@ -13,7 +13,7 @@ on:
 
 env:
   EMACS: emacs
-  EMACSFLAGS: "-Q -L /home/runner/work/spacemacs/spacemacs/lisp -L /home/runner/work/spacemacs/spacemacs/lisp/proofs"
+  EMACSFLAGS: "-Q -L $GITHUB_WORKSPACE/lisp -L $GITHUB_WORKSPACE/lisp/proofs"
   TEST_DIR: "/tmp/emacs-test"
 
 jobs:
@@ -88,11 +88,19 @@ jobs:
           
           # Copy the init file to the test directory
           echo "=== Copying init file to ${TEST_DIR}/init.el ==="
-          cp tests/config/init-test.el ${TEST_DIR}/init.el
+          cp ${GITHUB_WORKSPACE}/tests/config/init-test.el ${TEST_DIR}/init.el
+          
+          # Create necessary directories
+          mkdir -p ${TEST_DIR}/lisp/proofs
+          
+          # Copy the proof files to the test directory
+          echo "=== Copying proof files ==="
+          cp -r ${GITHUB_WORKSPACE}/lisp/proof-harness.el ${TEST_DIR}/lisp/
+          cp -r ${GITHUB_WORKSPACE}/lisp/proofs/*.el ${TEST_DIR}/lisp/proofs/
           
           # Show the test directory contents
           echo -e "\n=== Test directory contents ==="
-          ls -la ${TEST_DIR}/
+          find ${TEST_DIR} -type f | sort
           
           # Show the contents of the init file for debugging
           echo -e "\n=== Contents of init.el ==="
