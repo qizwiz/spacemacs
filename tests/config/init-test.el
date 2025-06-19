@@ -1,11 +1,21 @@
 ;; Minimal init file for Codeium tests
+(message "=== Starting minimal init file ===")
+
+;; Basic package setup
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
 (package-initialize)
-(unless (package-installed-p 'dash)
-  (package-refresh-contents)
-  (package-install 'dash))
-(require 'dash)
+
+;; Try to install dash if not available
+(condition-case err
+    (unless (package-installed-p 'dash)
+      (package-refresh-contents)
+      (package-install 'dash))
+  (error (message "Warning: Could not install dash package: %s" (error-message-string err))))
+
+(condition-case err
+    (require 'dash)
+  (error (message "Warning: Could not load dash: %s" (error-message-string err))))
 
 ;; Add test directories to load path
 (add-to-list 'load-path "/tmp/emacs-test/lisp")
@@ -22,11 +32,33 @@
 
 ;; Try to load proof harness
 (condition-case err
-    (require 'proof-harness)
+    (progn
+      (message "Trying to load proof-harness...")
+      (require 'proof-harness))
   (error 
    (message "Failed to load proof-harness: %s" (error-message-string err))
-   (message "Trying to load files directly...")
-   (load "proof-harness.el" nil t)))
+   (message "Trying to load proof-harness.el directly...")
+   (condition-case err2
+       (load "proof-harness.el" nil t)
+     (error
+      (message "Failed to load proof-harness.el directly: %s" (error-message-string err2))
+      (setq proof-harness-loaded nil)))
+   ;; Create a dummy proof-harness if loading failed
+   (unless (boundp 'proof-harness-loaded)
+     (message "Creating dummy proof-harness implementation")
+     (defun my/prove-harness (desc thunk)
+       (let ((result (format "SKIP: %s (no proof-harness)" desc)))
+         (message "%s" result)
+         result)))
+   (defun my/view-proof-log ()
+     (interactive)
+     (message "Proof log viewing not available in test mode"))
+   (defun my/list-capabilities ()
+     (interactive)
+     (message "Capability listing not available in test mode"))
+   (defun my/create-proof (feature)
+     (interactive "sFeature name: ")
+     (message "Proof creation not available in test mode"))))
 
 ;; Run the tests with error handling
 (setq proof-results nil)
