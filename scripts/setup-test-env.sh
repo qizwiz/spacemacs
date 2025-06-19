@@ -33,11 +33,48 @@ cat > "$TEST_DIR/lisp/proofs/straight-bootstrap.el" << 'EOL'
 (provide 'straight-bootstrap)
 EOL
 
+# Debug: Show the contents of the file we just created
+echo "=== Contents of $TEST_DIR/lisp/proofs/straight-bootstrap.el ==="
+cat "$TEST_DIR/lisp/proofs/straight-bootstrap.el"
+echo -e "\n=== End of file ===\n"
+
 # Also create straight-bootstrap.el in the home directory for tests that expect it there
+echo -e "\n=== Copying straight-bootstrap.el to home directory ==="
 HOME_EMACS_DIR="$HOME/.emacs.d"
 mkdir -p "$HOME_EMACS_DIR/lisp/proofs"
-cp "$TEST_DIR/lisp/proofs/straight-bootstrap.el" "$HOME_EMACS_DIR/lisp/proofs/straight-bootstrap.el"
-echo "Copied straight-bootstrap.el to $HOME_EMACS_DIR/lisp/proofs/"
+echo "Copying from: $TEST_DIR/lisp/proofs/straight-bootstrap.el"
+echo "Copying to: $HOME_EMACS_DIR/lisp/proofs/straight-bootstrap.el"
+
+# Check if source file exists
+if [ ! -f "$TEST_DIR/lisp/proofs/straight-bootstrap.el" ]; then
+  echo "ERROR: Source file does not exist: $TEST_DIR/lisp/proofs/straight-bootstrap.el"
+  echo "Current directory: $(pwd)"
+  echo "Test directory contents:"
+  find "$TEST_DIR" -type f | sort
+  exit 1
+fi
+
+# Copy the file
+cp -v "$TEST_DIR/lisp/proofs/straight-bootstrap.el" "$HOME_EMACS_DIR/lisp/proofs/straight-bootstrap.el"
+
+# Verify the copy was successful
+if [ $? -ne 0 ]; then
+  echo "ERROR: Failed to copy straight-bootstrap.el to $HOME_EMACS_DIR/lisp/proofs/"
+  exit 1
+fi
+
+echo -e "\n=== Verifying file was copied successfully ==="
+if [ -f "$HOME_EMACS_DIR/lisp/proofs/straight-bootstrap.el" ]; then
+  echo "SUCCESS: File exists at $HOME_EMACS_DIR/lisp/proofs/straight-bootstrap.el"
+  echo "File contents:"
+  cat "$HOME_EMACS_DIR/lisp/proofs/straight-bootstrap.el"
+  echo -e "\n=== End of file ==="
+else
+  echo "ERROR: File was not copied to $HOME_EMACS_DIR/lisp/proofs/straight-bootstrap.el"
+  echo "Directory contents of $HOME_EMACS_DIR/lisp/proofs/:"
+  ls -la "$HOME_EMACS_DIR/lisp/proofs/" || echo "Could not list directory"
+  exit 1
+fi
 
 # Copy the init file from the repository
 echo -e "\n=== Copying init file to $TEST_DIR/init.el ==="
