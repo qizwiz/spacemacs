@@ -50,31 +50,33 @@ jobs:
       
       - name: Create test directory structure
         run: |
-          # Create a test directory and copy our lisp files
+          # Create test directory structure
+          echo "=== Creating test directory structure ==="
           mkdir -p ${{ env.TEST_DIR }}/lisp/proofs
           
           # Copy lisp files if they exist
           if [ -d "lisp" ]; then
-            echo "Copying lisp files to ${{ env.TEST_DIR }}/lisp/"
+            echo "=== Copying lisp files to ${{ env.TEST_DIR }}/lisp/ ==="
             cp -r lisp/* ${{ env.TEST_DIR }}/lisp/ 2>/dev/null || true
             
             # Copy proof files if they exist
             if [ -d "lisp/proofs" ]; then
-              echo "Copying proof files to ${{ env.TEST_DIR }}/lisp/proofs/"
+              echo "=== Copying proof files to ${{ env.TEST_DIR }}/lisp/proofs/ ==="
               cp -r lisp/proofs/* ${{ env.TEST_DIR }}/lisp/proofs/ 2>/dev/null || true
             fi
           fi
           
-          # Show the directory structure for debugging
-          echo "=== Test directory structure ==="
-          find ${{ env.TEST_DIR }} -type f | sort || true
-          
           # Copy the init file from the repository
-          echo "=== Copying init file ==="
+          echo -e "\n=== Copying init file to ${{ env.TEST_DIR }}/init.el ==="
+          mkdir -p ${{ env.TEST_DIR }}
           cp tests/config/init-test.el ${{ env.TEST_DIR }}/init.el
           
+          # Show the directory structure for debugging
+          echo -e "\n=== Test directory structure ==="
+          find ${{ env.TEST_DIR }} -type f | sort || true
+          
           # Verify the init file was copied
-          echo "=== Init file contents ==="
+          echo -e "\n=== Init file contents ==="
           cat ${{ env.TEST_DIR }}/init.el
       
       - name: Run tests
